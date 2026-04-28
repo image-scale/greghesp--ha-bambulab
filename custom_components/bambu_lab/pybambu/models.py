@@ -16,7 +16,17 @@ class PrintJob:
 
     def print_update(self, data):
         """Update print job from data"""
-        raise NotImplementedError
+        if "mc_percent" in data:
+            self.print_percentage = data["mc_percent"]
+        if "gcode_state" in data:
+            self.gcode_state = data["gcode_state"]
+        if "mc_remaining_time" in data:
+            self.remaining_time = data["mc_remaining_time"]
+        if "layer_num" in data:
+            self.current_layer = data["layer_num"]
+        if "total_layer_num" in data:
+            self.total_layers = data["total_layer_num"]
+        return True
 
 
 class Info:

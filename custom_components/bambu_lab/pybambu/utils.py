@@ -6,7 +6,9 @@ import json
 
 def safe_json_loads(raw_bytes):
     """Safely load JSON from bytes"""
-    raise NotImplementedError
+    if isinstance(raw_bytes, bytes):
+        raw_bytes = raw_bytes.decode('utf-8')
+    return json.loads(raw_bytes)
 
 
 def get_HMS_error_text(error_code, printer_model, language):
