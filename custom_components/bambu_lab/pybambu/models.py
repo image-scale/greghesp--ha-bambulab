@@ -332,4 +332,25 @@ class Temperature:
 
     def print_update(self, data):
         """Update temperature from data"""
-        raise NotImplementedError
+        # H2D dual extruder temperature data is in device.extruder.info
+        if "device" in data:
+            device_data = data["device"]
+            if "extruder" in device_data:
+                extruder_data = device_data["extruder"]
+                if "info" in extruder_data:
+                    for ext_info in extruder_data["info"]:
+                        ext_id = ext_info.get("id", 0)
+                        temp_encoded = ext_info.get("temp", 0)
+
+                        # Temperature is encoded as: (target << 16) | current
+                        current_temp = temp_encoded & 0xFFFF
+                        target_temp = temp_encoded >> 16
+
+                        if ext_id == 0:
+                            self.right_nozzle_temperature = current_temp
+                            self.right_nozzle_target_temperature = target_temp
+                        elif ext_id == 1:
+                            self.left_nozzle_temperature = current_temp
+                            self.left_nozzle_target_temperature = target_temp
+
+        return True
