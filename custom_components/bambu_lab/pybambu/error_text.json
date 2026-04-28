@@ -1,0 +1,136 @@
+{
+  "hms": {
+    "0300_0100_0001_0007": {
+      "_all": {
+        "en": "The heatbed temperature is abnormal; the sensor may have an open circuit.",
+        "fr": "La température du plateau est anormale, le circuit de mesure est peut être interrompu."
+      },
+      "_severity": "fatal"
+    },
+    "07FF_7000_0002_0003": {
+      "A1": {
+        "en": "Please check if the filament is coming out of the nozzle. If not, gently push the material and try to extrude again."
+      },
+      "_all": {
+        "en": "Please check if the filament is coming out of the nozzle. If not, gently push the material and try to extrude again."
+      },
+      "_severity": "serious"
+    },
+    "0C00_0100_0002_000E": {
+      "_all": {
+        "en": ""
+      },
+      "_severity": "serious"
+    },
+    "18FE_2000_0002_0004": {
+      "H2D": {
+        "es": "Retire el filamento externo del extrusor izquierdo.",
+        "en": "Remove external filament from left extruder."
+      },
+      "_all": {
+        "es": "Retire el filamento externo del extrusor izquierdo.",
+        "en": "Remove external filament from left extruder."
+      },
+      "_severity": "serious"
+    },
+    "0300_0600_0001_0002": {
+      "H2S": {
+        "pt-BR": "O Motor-A tem um curto-circuito. Pode ter falhado.",
+        "en": "Motor-A has a short circuit. It may have failed."
+      },
+      "_all": {
+        "pt-BR": "O Motor-A tem um curto-circuito. Pode ter falhado.",
+        "en": "Motor-A has a short circuit. It may have failed."
+      },
+      "_severity": "fatal"
+    },
+    "0500_0100_0003_0006": {
+      "A1MINI": {
+        "de": "Unformatierte SD-Karte. Bitte formatieren.",
+        "en": "Unformatted SD card. Please format it."
+      },
+      "_all": {
+        "de": "Unformatierte SD-Karte. Bitte formatieren.",
+        "en": "Unformatted SD card. Please format it."
+      },
+      "_severity": "serious"
+    },
+    "0300_0A00_0001_0003": {
+      "H2S": {
+        "de": "Die Empfindlichkeit des Kraftsensors 1 ist zu niedrig. Die elektrische Verbindung ist vielleicht kaputt.",
+        "en": "Force sensor 1 sensitivity is too low. The electrical connection may be broken."
+      },
+      "_all": {
+        "de": "Die Empfindlichkeit des Kraftsensors 1 ist zu niedrig. Die elektrische Verbindung ist vielleicht kaputt.",
+        "en": "Force sensor 1 sensitivity is too low. The electrical connection may be broken."
+      },
+      "_severity": "serious"
+    },
+    "0300_9500_0001_0001": {
+      "H2S": {
+        "en": "The temperature sensor of the Laser Module may have a short circuit."
+      },
+      "_all": {
+        "en": "The temperature sensor of the Laser Module may have a short circuit."
+      },
+      "_severity": "serious"
+    },
+    "0300_9900_0001_0001": {
+      "H2D": {
+        "de": "Das rechte Seitenfenster scheint geöffnet zu sein. Die Aufgabe wurde pausiert.",
+        "en": "The right side window seems to be open. The task has been paused."
+      },
+      "_all": {
+        "de": "Das rechte Seitenfenster scheint geöffnet zu sein. Die Aufgabe wurde pausiert.",
+        "en": "The right side window seems to be open. The task has been paused."
+      },
+      "_severity": "serious"
+    }
+  },
+  "print": {
+    "0500_400C": {
+      "P1P": {
+        "en": "Please insert a MicroSD card and restart the print job.",
+        "es": "Por favor, inserte una tarjeta SD y reinicie la impresión."
+      },
+      "A1": {
+        "es": "Por favor, inserte una tarjeta SD y reinicie la impresión.",
+        "en": "Please insert a MicroSD card and restart the print job."
+      },
+      "_all": {
+        "en": "Please insert a MicroSD card and restart the print job.",
+        "es": "Por favor, inserte una tarjeta SD y reinicie la impresión."
+      }
+    },
+    "0300_4009": {
+      "X1": {
+        "es": "Homing Ejes XY Fallido",
+        "en": "XY Axes Homing Failed"
+      },
+      "_all": {
+        "es": "Homing Ejes XY Fallido",
+        "en": "XY Axes Homing Failed"
+      }
+    },
+    "0500_4054": {
+      "H2S": {
+        "pt-BR": "Erro detectado no tapete.",
+        "en": "Error detected on the belt."
+      },
+      "_all": {
+        "pt-BR": "Erro detectado no tapete.",
+        "en": "Error detected on the belt."
+      }
+    }
+  },
+  "_model_fallback": {
+    "H2S": ["H2D", "X1C", "X1"],
+    "H2D": ["H2S", "X1C", "X1"],
+    "X1C": ["X1"],
+    "X1E": ["X1C", "X1"],
+    "A1": ["A1MINI", "P1P"],
+    "A1MINI": ["A1", "P1P"],
+    "P1P": ["P1S", "X1"],
+    "P1S": ["P1P", "X1"]
+  }
+}
