@@ -45,14 +45,55 @@ class Info:
         self.client = client
         self.sw_ver = ""
         self.device_type = ""
-        self.active_nozzle_diameter = 0.0
-        self.active_nozzle_type = ""
+        self._active_nozzle_diameter = 0.0
+        self._active_nozzle_type = ""
         self.left_nozzle_diameter = 0.0
         self.left_nozzle_type = ""
         self.right_nozzle_diameter = 0.0
         self.right_nozzle_type = ""
         self.door_open = False
         self._nozzle_info = []  # Store nozzle info for dual extruder
+        self._has_dual_nozzles = False
+
+    @property
+    def active_nozzle_diameter(self):
+        """Get active nozzle diameter based on extruder state"""
+        if self._has_dual_nozzles:
+            try:
+                extruder = self.client._device.extruder
+                active_idx = extruder.active_nozzle_index
+                if active_idx == 0:
+                    return self.right_nozzle_diameter
+                else:
+                    return self.left_nozzle_diameter
+            except (AttributeError, KeyError):
+                pass
+        return self._active_nozzle_diameter
+
+    @active_nozzle_diameter.setter
+    def active_nozzle_diameter(self, value):
+        """Set active nozzle diameter"""
+        self._active_nozzle_diameter = value
+
+    @property
+    def active_nozzle_type(self):
+        """Get active nozzle type based on extruder state"""
+        if self._has_dual_nozzles:
+            try:
+                extruder = self.client._device.extruder
+                active_idx = extruder.active_nozzle_index
+                if active_idx == 0:
+                    return self.right_nozzle_type
+                else:
+                    return self.left_nozzle_type
+            except (AttributeError, KeyError):
+                pass
+        return self._active_nozzle_type
+
+    @active_nozzle_type.setter
+    def active_nozzle_type(self, value):
+        """Set active nozzle type"""
+        self._active_nozzle_type = value
 
     def info_update(self, data):
         """Update info from version data"""
@@ -70,11 +111,11 @@ class Info:
             diameter = data["nozzle_diameter"]
             if isinstance(diameter, str):
                 diameter = float(diameter)
-            self.active_nozzle_diameter = diameter
+            self._active_nozzle_diameter = diameter
             self.right_nozzle_diameter = diameter
 
         if "nozzle_type" in data:
-            self.active_nozzle_type = data["nozzle_type"]
+            self._active_nozzle_type = data["nozzle_type"]
             self.right_nozzle_type = data["nozzle_type"]
 
         # Handle dual-extruder nozzle info (H2D)
@@ -84,6 +125,9 @@ class Info:
                 nozzle_data = device_data["nozzle"]
                 if "info" in nozzle_data:
                     self._nozzle_info = nozzle_data["info"]
+                    # Check if this is a dual nozzle setup
+                    if len(self._nozzle_info) >= 2:
+                        self._has_dual_nozzles = True
                     for nozzle in self._nozzle_info:
                         nozzle_id = nozzle.get("id", 0)
                         diameter = nozzle.get("diameter", 0.0)
@@ -97,9 +141,6 @@ class Info:
                             self.left_nozzle_diameter = diameter
                             self.left_nozzle_type = nozzle_type
 
-        # Update active nozzle based on active extruder index
-        self._update_active_nozzle()
-
         # Handle door status - H2D uses stat field
         if "stat" in data:
             stat_str = data["stat"]
@@ -111,20 +152,6 @@ class Info:
                 pass
 
         return True
-
-    def _update_active_nozzle(self):
-        """Update active nozzle based on extruder state"""
-        try:
-            extruder = self.client._device.extruder
-            active_idx = extruder.active_nozzle_index
-            if active_idx == 0:
-                self.active_nozzle_diameter = self.right_nozzle_diameter
-                self.active_nozzle_type = self.right_nozzle_type
-            else:
-                self.active_nozzle_diameter = self.left_nozzle_diameter
-                self.active_nozzle_type = self.left_nozzle_type
-        except (AttributeError, KeyError):
-            pass
 
 
 class Extruder:
