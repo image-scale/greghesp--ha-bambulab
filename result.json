@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "tests_passed": 29,
+  "tests_failed": 0,
+  "tests_total": 29,
+  "modules_created": [
+    "custom_components/bambu_lab/pybambu/__init__.py",
+    "custom_components/bambu_lab/pybambu/const.py",
+    "custom_components/bambu_lab/pybambu/models.py",
+    "custom_components/bambu_lab/pybambu/utils.py",
+    "custom_components/bambu_lab/pybambu/error_text.json"
+  ],
+  "notes": "Rebuilt pybambu package from scratch with 8 commits following staircase progression. Implemented: PrintJob (print state), Extruder (active nozzle), Info (nozzle/door), AMSList/AMS/Tray (filament tracking), Temperature (dual nozzle temps), HMSList (HMS errors with i18n), PrintError (print errors with i18n). Error lookup supports multi-language fallback (en, de, es, fr, pt-BR) and model fallback chains."
+}
