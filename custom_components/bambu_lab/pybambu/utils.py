@@ -63,24 +63,35 @@ def _lookup_error_text(errors_dict, error_code, printer_model, language):
     model_fallbacks = _error_data.get("_model_fallback", {}).get(printer_model, [])
     models_to_try = [printer_model] + model_fallbacks + ["_all"]
 
+    # Track if we found an entry (even if empty) to differentiate from not found
+    found_entry = False
+
     for model in models_to_try:
         if model in error_entry and isinstance(error_entry[model], dict):
             model_entry = error_entry[model]
             # Try exact language
             if language in model_entry:
+                found_entry = True
                 text = model_entry[language]
-                if text:  # Skip empty strings
+                if text:  # Skip empty strings to try next
                     return text
             # Try base language
             if base_lang != language and base_lang in model_entry:
+                found_entry = True
                 text = model_entry[base_lang]
                 if text:
                     return text
             # Try English fallback
             if "en" in model_entry and language != "en" and base_lang != "en":
+                found_entry = True
                 text = model_entry["en"]
                 if text:
                     return text
+
+    # If we found an entry but all texts were empty, return empty string
+    # This indicates the error should be ignored
+    if found_entry:
+        return ""
 
     return "unknown"
 

@@ -301,10 +301,73 @@ class HMSList:
         self.client = client
         self.error_count = 0
         self.errors = {"Count": 0}
+        self._prev_error_count = 0
 
     def print_update(self, data):
         """Update HMS list from data"""
-        raise NotImplementedError
+        from .utils import get_HMS_error_text, get_HMS_severity
+
+        if "hms" not in data:
+            return False
+
+        hms_list = data["hms"]
+
+        # Get device info for printer model
+        try:
+            device_type = self.client._device.info.device_type
+        except AttributeError:
+            device_type = "unknown"
+
+        # Get user language
+        try:
+            language = self.client.user_language
+        except AttributeError:
+            language = "en"
+
+        # Build error dictionary
+        new_errors = {"Count": 0}
+        error_num = 0
+
+        for hms_entry in hms_list:
+            attr = hms_entry.get("attr", 0)
+            code = hms_entry.get("code", 0)
+
+            # Build HMS code: HMS_{attr>>16:04X}_{attr&0xFFFF:04X}_{code>>16:04X}_{code&0xFFFF:04X}
+            hms_code = f"HMS_{(attr >> 16) & 0xFFFF:04X}_{attr & 0xFFFF:04X}_{(code >> 16) & 0xFFFF:04X}_{code & 0xFFFF:04X}"
+            code_part = hms_code[4:]  # Remove "HMS_" prefix for wiki link
+
+            # Get error text
+            error_text = get_HMS_error_text(hms_code[4:], device_type, language)
+
+            # Skip errors with empty text
+            if not error_text or error_text == "":
+                continue
+
+            # Get severity
+            severity = get_HMS_severity(hms_code[4:])
+
+            error_num += 1
+            new_errors[f"{error_num}-Code"] = hms_code
+            new_errors[f"{error_num}-Error"] = error_text
+            new_errors[f"{error_num}-Wiki"] = f"https://wiki.bambulab.com/en/x1/troubleshooting/hmscode/{code_part.replace('_', '_')}"
+            new_errors[f"{error_num}-Severity"] = severity
+
+        new_errors["Count"] = error_num
+        self.error_count = error_num
+        self.errors = new_errors
+
+        # Check if error state changed
+        state_changed = (error_num != self._prev_error_count) or (error_num > 0 and self._prev_error_count == 0)
+        self._prev_error_count = error_num
+
+        if state_changed and (error_num > 0 or self._prev_error_count == 0):
+            try:
+                self.client.callback("event_printer_error")
+            except (AttributeError, TypeError):
+                pass
+            return True
+
+        return False
 
 
 class PrintError:
@@ -314,10 +377,62 @@ class PrintError:
         self.client = client
         self.on = False
         self.error = None
+        self._prev_error = None
 
     def print_update(self, data):
         """Update print error from data"""
-        raise NotImplementedError
+        from .utils import get_print_error_text
+
+        if "print_error" not in data:
+            return False
+
+        print_error = data["print_error"]
+
+        # Get device info for printer model
+        try:
+            device_type = self.client._device.info.device_type
+        except AttributeError:
+            device_type = "unknown"
+
+        # Get user language
+        try:
+            language = self.client.user_language
+        except AttributeError:
+            language = "en"
+
+        if print_error == 0:
+            # No error
+            if self.on:
+                # Error was cleared
+                self.on = False
+                self.error = None
+                try:
+                    self.client.callback("event_print_error")
+                except (AttributeError, TypeError):
+                    pass
+            return False
+
+        # Build error code: {print_error>>16:04X}_{print_error&0xFFFF:04X}
+        error_code = f"{(print_error >> 16) & 0xFFFF:04X}_{print_error & 0xFFFF:04X}"
+
+        # Get error text
+        error_text = get_print_error_text(error_code, device_type, language)
+
+        self.error = {
+            "code": error_code,
+            "error": error_text
+        }
+        self.on = True
+
+        # Notify of error
+        if self._prev_error != print_error:
+            self._prev_error = print_error
+            try:
+                self.client.callback("event_print_error")
+            except (AttributeError, TypeError):
+                pass
+
+        return False
 
 
 class Temperature:
