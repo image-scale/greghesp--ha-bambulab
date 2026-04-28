@@ -32,6 +32,15 @@ class PrintJob:
 class Info:
     """Info model"""
 
+    # Nozzle type code to name mapping
+    NOZZLE_TYPES = {
+        "HS00": "stainless_steel",
+        "HS01": "hardened_steel",
+        "HH01": "high_flow_hardened_steel",
+        "HX01": "hardened_steel",
+        "HX05": "tungsten_carbide",
+    }
+
     def __init__(self, client):
         self.client = client
         self.sw_ver = ""
@@ -43,14 +52,79 @@ class Info:
         self.right_nozzle_diameter = 0.0
         self.right_nozzle_type = ""
         self.door_open = False
+        self._nozzle_info = []  # Store nozzle info for dual extruder
 
     def info_update(self, data):
         """Update info from version data"""
-        raise NotImplementedError
+        if "module" in data:
+            for module in data["module"]:
+                if module.get("name") == "ota":
+                    self.sw_ver = module.get("sw_ver", "")
+                    break
+        return True
 
     def print_update(self, data):
         """Update info from print data"""
-        raise NotImplementedError
+        # Handle nozzle info for single extruder printers (P1P, etc.)
+        if "nozzle_diameter" in data:
+            diameter = data["nozzle_diameter"]
+            if isinstance(diameter, str):
+                diameter = float(diameter)
+            self.active_nozzle_diameter = diameter
+            self.right_nozzle_diameter = diameter
+
+        if "nozzle_type" in data:
+            self.active_nozzle_type = data["nozzle_type"]
+            self.right_nozzle_type = data["nozzle_type"]
+
+        # Handle dual-extruder nozzle info (H2D)
+        if "device" in data:
+            device_data = data["device"]
+            if "nozzle" in device_data:
+                nozzle_data = device_data["nozzle"]
+                if "info" in nozzle_data:
+                    self._nozzle_info = nozzle_data["info"]
+                    for nozzle in self._nozzle_info:
+                        nozzle_id = nozzle.get("id", 0)
+                        diameter = nozzle.get("diameter", 0.0)
+                        nozzle_type_code = nozzle.get("type", "")
+                        nozzle_type = self.NOZZLE_TYPES.get(nozzle_type_code, nozzle_type_code)
+
+                        if nozzle_id == 0:
+                            self.right_nozzle_diameter = diameter
+                            self.right_nozzle_type = nozzle_type
+                        elif nozzle_id == 1:
+                            self.left_nozzle_diameter = diameter
+                            self.left_nozzle_type = nozzle_type
+
+        # Update active nozzle based on active extruder index
+        self._update_active_nozzle()
+
+        # Handle door status - H2D uses stat field
+        if "stat" in data:
+            stat_str = data["stat"]
+            try:
+                stat = int(stat_str, 16)
+                # Bit 23 (0x800000) indicates door open
+                self.door_open = bool(stat & 0x800000)
+            except (ValueError, TypeError):
+                pass
+
+        return True
+
+    def _update_active_nozzle(self):
+        """Update active nozzle based on extruder state"""
+        try:
+            extruder = self.client._device.extruder
+            active_idx = extruder.active_nozzle_index
+            if active_idx == 0:
+                self.active_nozzle_diameter = self.right_nozzle_diameter
+                self.active_nozzle_type = self.right_nozzle_type
+            else:
+                self.active_nozzle_diameter = self.left_nozzle_diameter
+                self.active_nozzle_type = self.left_nozzle_type
+        except (AttributeError, KeyError):
+            pass
 
 
 class Extruder:
@@ -62,7 +136,16 @@ class Extruder:
 
     def print_update(self, data):
         """Update extruder from data"""
-        raise NotImplementedError
+        # Check for device.extruder.state
+        if "device" in data:
+            device_data = data["device"]
+            if "extruder" in device_data:
+                extruder_data = device_data["extruder"]
+                if "state" in extruder_data:
+                    state = extruder_data["state"]
+                    # Active nozzle index is bit 8 of state
+                    self.active_nozzle_index = (state >> 8) & 1
+        return True
 
 
 class AMS:
