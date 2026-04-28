@@ -178,13 +178,20 @@ class Extruder:
 class AMS:
     """AMS model"""
 
+    # Map of module name prefixes to model names
+    MODULE_MODELS = {
+        "ams/": "AMS",
+        "n3f/": "AMS 2 Pro",
+        "n3s/": "AMS HT",
+    }
+
     def __init__(self, ams_id):
         self.id = ams_id
         self.humidity = 0
         self.temperature = 0.0
         self.sw_version = ""
         self.model = ""
-        self.tray = []
+        self.tray = {}
 
 
 class Tray:
@@ -206,11 +213,85 @@ class AMSList:
 
     def info_update(self, data):
         """Update AMS list from version data"""
-        raise NotImplementedError
+        if "module" not in data:
+            return False
+
+        for module in data["module"]:
+            name = module.get("name", "")
+            sw_ver = module.get("sw_ver", "")
+
+            # Parse AMS module names: "ams/0", "ams/1", "n3f/2", "n3s/128"
+            for prefix, model_name in AMS.MODULE_MODELS.items():
+                if name.startswith(prefix):
+                    try:
+                        ams_id = int(name[len(prefix):])
+                        if ams_id not in self.data:
+                            self.data[ams_id] = AMS(ams_id)
+                        self.data[ams_id].sw_version = sw_ver
+                        self.data[ams_id].model = model_name
+                    except ValueError:
+                        pass
+                    break
+
+        return True
 
     def print_update(self, data):
         """Update AMS list from print data"""
-        raise NotImplementedError
+        if "ams" not in data:
+            return False
+
+        ams_data = data["ams"]
+        if "ams" not in ams_data:
+            return False
+
+        for ams_entry in ams_data["ams"]:
+            try:
+                ams_id = int(ams_entry.get("id", "0"))
+            except (ValueError, TypeError):
+                continue
+
+            # Get or create AMS
+            if ams_id not in self.data:
+                self.data[ams_id] = AMS(ams_id)
+
+            ams = self.data[ams_id]
+
+            # Parse humidity - use humidity_raw if available, otherwise humidity
+            humidity_raw = ams_entry.get("humidity_raw")
+            humidity = ams_entry.get("humidity")
+            try:
+                if humidity_raw is not None:
+                    ams.humidity = int(humidity_raw)
+                elif humidity is not None:
+                    ams.humidity = int(humidity)
+            except (ValueError, TypeError):
+                pass
+
+            # Parse temperature
+            temp = ams_entry.get("temp")
+            try:
+                if temp is not None:
+                    ams.temperature = float(temp)
+            except (ValueError, TypeError):
+                pass
+
+            # Parse trays
+            tray_list = ams_entry.get("tray", [])
+            ams.tray = {}  # Reset trays
+            for tray_data in tray_list:
+                try:
+                    tray_id = int(tray_data.get("id", "0"))
+                except (ValueError, TypeError):
+                    continue
+
+                tray = Tray()
+                tray.remain = tray_data.get("remain", 0)
+                tray.type = tray_data.get("tray_type", "")
+                tray.color = tray_data.get("tray_color", "")
+                tray.tray_weight = tray_data.get("tray_weight", "")
+                ams.tray[tray_id] = tray
+
+        return True
 
 
 class HMSList:
